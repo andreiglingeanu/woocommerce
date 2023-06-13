@@ -60,3 +60,43 @@ function wc_get_container() {
 
 // Global for backwards compatibility.
 $GLOBALS['woocommerce'] = WC();
+
+Automattic\WooCommerce\Internal\RestApi\Infrastructure\RestApiEngine::initialize();
+
+add_filter('wc_rest_api_v4_additional_endpoints', function($endpoints) {
+	$endpoints[] = [
+		'class_name' => 'RestApiCalculator',
+		'endpoints' => [
+			[
+				'verbs' => 'GET',
+				'route' => '/calculator/add',
+				'method_name' => 'add',
+				'allows_unauthenticated' => true
+			]
+		]
+	];
+	return $endpoints;
+}, 10, 1);
+
+use Automattic\WooCommerce\Internal\RestApi\Infrastructure\ResponseException;
+
+class RestApiCalculator {
+	public static function add($request,  $user) {
+		$num1 = self::get_argument($request, 'num1');
+		$num2 = self::get_argument($request, 'num2');
+		return $num1 + $num2;
+	}
+
+	private static function get_argument($request, $name) {
+		$arg = $request->get_param($name) ?? null;
+		if($arg === null) {
+			throw ResponseException::for_wp_error(400, 'missing_Argument', "$name is missing");
+		}
+		if(!is_numeric($arg)) {
+			throw ResponseException::for_wp_error(400, 'missing_Argument', "$name is not a number");
+		}
+
+		return $arg;
+	}
+}
+
