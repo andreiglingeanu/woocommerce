@@ -25,6 +25,7 @@ import {
 	ONBOARDING_STORE_NAME,
 	Extension,
 	GeolocationResponse,
+	PLUGINS_STORE_NAME,
 } from '@woocommerce/data';
 import { recordEvent } from '@woocommerce/tracks';
 import { initializeExPlat } from '@woocommerce/explat';
@@ -1149,7 +1150,7 @@ export const coreProfilerStateMachineDefinition = createMachine( {
 						},
 						onDone: [
 							{
-								target: 'sendToJetpackAuthPage',
+								target: 'isJetpackConnected',
 								cond: ( _context ) => {
 									return (
 										_context.pluginsSelected.find(
@@ -1171,6 +1172,24 @@ export const coreProfilerStateMachineDefinition = createMachine( {
 						progress: 100,
 					},
 				},
+				isJetpackConnected: {
+					invoke: {
+						src: async () => {
+							return await resolveSelect(
+								PLUGINS_STORE_NAME
+							).isJetpackConnected();
+						},
+						onDone: [
+							{
+								target: 'sendToJetpackAuthPage',
+								cond: ( _context, event ) => {
+									return ! event.data;
+								},
+							},
+							{ actions: 'redirectToWooHome' },
+						],
+					},
+				},
 				sendToJetpackAuthPage: {
 					invoke: {
 						src: async () =>
@@ -1184,7 +1203,7 @@ export const coreProfilerStateMachineDefinition = createMachine( {
 						onDone: {
 							actions: [
 								( _context, event ) => {
-									window.location.href = event.data;
+									// window.location.href = event.data;
 								},
 							],
 						},
